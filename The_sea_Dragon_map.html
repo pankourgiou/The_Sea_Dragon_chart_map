@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Sea-Dragon Chart</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#4a2208;--sea:#a8c8d8;--land:#dfc878;--gold:#c8900a}
+body{
+  display:flex;flex-direction:row;align-items:center;justify-content:center;
+  gap:28px;min-height:100vh;padding:20px;
+  background:radial-gradient(ellipse at center,#1a1206 0%,#0c0804 100%);
+  font-family:'Cinzel',serif;overflow-x:hidden;
+}
+#dust{position:fixed;inset:0;pointer-events:none;z-index:0}
+.dp{position:absolute;border-radius:50%;background:rgba(200,160,60,.2);animation:dp linear infinite}
+@keyframes dp{0%{transform:translateY(100vh);opacity:0}10%{opacity:1}90%{opacity:.3}100%{transform:translateY(-20px);opacity:0}}
+
+.map-wrap{position:relative;z-index:1;flex-shrink:0}
+.map-outer{
+  position:relative;width:700px;height:700px;
+  /* warm golden-cream parchment matching map2 */
+  background:
+    radial-gradient(ellipse at 20% 15%,#f8e8b0 0%,transparent 45%),
+    radial-gradient(ellipse at 80% 85%,#e8cc80 0%,transparent 45%),
+    radial-gradient(ellipse at 60% 25%,#f4e0a8 0%,transparent 35%),
+    linear-gradient(135deg,#e8c870 0%,#f4e09c 30%,#ecd888 60%,#dfc060 100%);
+  box-shadow:0 0 0 3px #9a7010,0 0 0 7px #5a3c08,0 0 50px rgba(0,0,0,.9),inset 0 0 60px rgba(0,0,0,.2);
+  animation:appear 1.4s ease-out forwards;opacity:0;
+}
+@keyframes appear{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+.map-outer::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse at 5% 5%,rgba(120,70,10,.5) 0%,transparent 32%),
+    radial-gradient(ellipse at 95% 95%,rgba(100,55,8,.45) 0%,transparent 30%),
+    radial-gradient(ellipse at 95% 5%,rgba(90,50,8,.4) 0%,transparent 28%),
+    radial-gradient(ellipse at 5% 95%,rgba(100,58,8,.45) 0%,transparent 30%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+  background-size:auto,auto,auto,auto,400px;mix-blend-mode:multiply;pointer-events:none;z-index:1;
+}
+.map-border{position:absolute;inset:12px;border:2px solid rgba(80,45,8,.38);z-index:20;pointer-events:none}
+.map-border::before{content:'';position:absolute;inset:5px;border:1px solid rgba(80,45,8,.22)}
+#map-svg{position:absolute;inset:0;width:100%;height:100%;z-index:3;cursor:crosshair}
+
+.mtitle{position:absolute;top:20px;left:50%;transform:translateX(-50%);z-index:22;text-align:center;pointer-events:none;animation:tfade 2s ease-out forwards;opacity:0;}
+@keyframes tfade{from{opacity:0;transform:translateX(-50%) translateY(-6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.mtitle h1{font-family:'Cinzel Decorative',serif;font-size:14px;color:#4a2208;letter-spacing:5px;white-space:nowrap;text-shadow:0 1px 0 rgba(255,230,130,.5)}
+.mtitle .sub{font-family:'IM Fell English',serif;font-style:italic;font-size:8px;color:#7a5018;letter-spacing:3px;margin-top:2px}
+.mtitle .rule{width:100%;height:1px;background:linear-gradient(to right,transparent,rgba(100,55,10,.35),transparent);margin-top:3px}
+
+.tip{display:none;position:absolute;background:linear-gradient(150deg,rgba(30,16,4,.97),rgba(20,10,2,.99));border:1px solid #9a6828;border-top:1px solid #c8a040;padding:9px 13px;z-index:60;pointer-events:none;max-width:195px;box-shadow:0 4px 18px rgba(0,0,0,.7)}
+.tip.show{display:block;animation:tin .2s ease-out}
+@keyframes tin{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.tip strong{display:block;font-family:'Cinzel',serif;font-size:10px;color:#f0c058;margin-bottom:4px;letter-spacing:1px;border-bottom:1px solid rgba(200,150,40,.3);padding-bottom:3px}
+.tip p{font-family:'IM Fell English',serif;font-size:11px;color:#d4b868;font-style:italic;line-height:1.5}
+
+.lm{cursor:pointer}.lm:hover{filter:brightness(1.4) drop-shadow(0 0 4px rgba(200,150,40,.7))}
+
+@keyframes gp{0%,100%{opacity:.5}50%{opacity:1}}
+@keyframes seawave{0%{stroke-dashoffset:0}100%{stroke-dashoffset:-50}}
+@keyframes dragfly{0%{transform:translate(0,0)}25%{transform:translate(12px,-6px)}50%{transform:translate(20px,2px)}75%{transform:translate(10px,8px)}100%{transform:translate(0,0)}}
+@keyframes pp{0%,100%{opacity:.12}50%{opacity:.04}}
+@keyframes rswp{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes bfl{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes chest{from{opacity:0;transform:scale(.3)}to{opacity:1;transform:scale(1)}}
+.gp{animation:gp 2.6s ease-in-out infinite}
+.sw{animation:seawave 5s linear infinite}
+#pp-o{animation:pp 1.8s ease-in-out infinite}#pp-i{animation:pp 1.8s ease-in-out infinite .4s}
+#player-dot{transition:transform .16s cubic-bezier(.22,1,.36,1)}
+#treasure-marker{display:none;animation:chest .5s ease-out}
+#r-sweep{transform-origin:105px 105px;transform-box:fill-box;animation:rswp 3s linear infinite}
+.rbon{animation:bfl 1s ease-in-out infinite}.rb2on{animation:bfl 1s ease-in-out infinite .25s}
+
+#radar-panel{
+  flex-shrink:0;width:260px;
+  background:linear-gradient(170deg,#1a1004 0%,#100a02 100%);
+  border:2px solid #7a5018;border-top:2px solid #b88028;border-radius:3px;
+  padding:22px 18px 20px;display:flex;flex-direction:column;align-items:center;gap:16px;
+  box-shadow:0 0 40px rgba(0,0,0,.9),inset 0 0 20px rgba(0,0,0,.5);
+  z-index:1;animation:appear 1.8s ease-out forwards;opacity:0;
+}
+#r-title{font-family:'Cinzel Decorative',serif;font-size:12px;color:#c89028;letter-spacing:3px;text-align:center;text-shadow:0 0 10px rgba(190,130,20,.4);border-bottom:1px solid rgba(150,90,15,.3);width:100%;padding-bottom:13px}
+#radar-wrap{width:210px;height:210px}
+#rsv{width:100%;height:100%;overflow:visible}
+#r-label{font-family:'Cinzel',serif;font-size:10px;color:rgba(170,110,25,.55);letter-spacing:3px;text-align:center}
+#prox-track{width:100%;height:12px;background:rgba(20,12,2,.9);border:1px solid rgba(150,90,15,.25);border-radius:6px;overflow:hidden}
+#prox-fill{height:100%;width:0%;border-radius:6px;transition:width .4s ease,background .4s ease;background:linear-gradient(90deg,#1a1000,#c09020);box-shadow:0 0 8px rgba(190,140,20,.4)}
+#prox-num{font-family:'Cinzel Decorative',serif;font-size:36px;color:#c89028;text-shadow:0 0 18px rgba(190,130,20,.6);letter-spacing:2px;transition:color .4s,text-shadow .4s}
+#r-status{font-family:'IM Fell English',serif;font-size:14px;color:rgba(170,110,25,.6);font-style:italic;text-align:center;line-height:1.5;min-height:42px;transition:color .35s}
+#r-hint{font-family:'Cinzel',serif;font-size:10px;color:rgba(110,70,15,.4);letter-spacing:2px;border-top:1px solid rgba(150,90,15,.15);width:100%;padding-top:13px;text-align:center}
+</style>
+</head>
+<body>
+<div id="dust"></div>
+
+<div class="map-wrap">
+  <div class="map-outer">
+    <div class="map-border"></div>
+    <div class="mtitle">
+      <h1>THE SEA-DRAGON CHART</h1>
+      <div class="sub">— mapped by order of the Merchant Princes of Vel Sadro —</div>
+      <div class="rule"></div>
+    </div>
+
+    <svg id="map-svg" viewBox="0 0 700 700" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="fshadow" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="1.5" dy="2.5" stdDeviation="3" flood-color="rgba(60,35,5,.4)"/>
+        </filter>
+        <filter id="fglow" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="b"/>
+          <feColorMatrix in="b" type="matrix" values="1 .6 0 0 0  .7 .4 0 0 0  0 .1 0 0 0  0 0 0 1.3 0" result="c"/>
+          <feMerge><feMergeNode in="c"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <linearGradient id="seaG" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"   stop-color="#a8d4e8"/>
+          <stop offset="50%"  stop-color="#88bcd8"/>
+          <stop offset="100%" stop-color="#6098b8"/>
+        </linearGradient>
+        <linearGradient id="mtnG" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stop-color="#e8d0c0"/>
+          <stop offset="35%"  stop-color="#c8a888"/>
+          <stop offset="100%" stop-color="#a07858"/>
+        </linearGradient>
+        <linearGradient id="islandG" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%"   stop-color="#e4d498"/>
+          <stop offset="100%" stop-color="#c8b060"/>
+        </linearGradient>
+      </defs>
+
+      <!-- ── SEA (large, spans upper-right and center, matching map2) ── -->
+      <!-- Main sea body upper right -->
+      <path d="M 380,18 C 430,20 490,28 540,36 C 590,44 640,55 668,70 C 682,82 682,110 680,140 C 678,170 668,195 650,210 C 632,225 608,228 582,222 C 556,216 530,202 504,196 C 478,190 452,192 428,188 C 404,184 382,174 368,162 C 354,150 348,134 344,116 C 340,98 342,78 356,60 C 366,46 375,28 380,18Z"
+        fill="url(#seaG)" stroke="#6898b8" stroke-width=".8" opacity=".88"/>
+      <!-- sea shimmer lines -->
+      <path d="M 400,60 C 430,55 470,58 510,65 C 550,72 590,82 620,88"
+        fill="none" stroke="rgba(220,245,255,.5)" stroke-width="1.5" stroke-linecap="round" opacity=".7" class="sw"/>
+      <path d="M 390,90 C 420,85 460,88 500,95 C 540,102 580,110 610,114"
+        fill="none" stroke="rgba(220,245,255,.4)" stroke-width="1.2" stroke-linecap="round" opacity=".6" class="sw" style="animation-delay:.6s"/>
+      <path d="M 410,118 C 435,114 465,116 495,122 C 525,128 555,136 575,138"
+        fill="none" stroke="rgba(220,245,255,.35)" stroke-width="1" stroke-linecap="round" opacity=".5" class="sw" style="animation-delay:1.2s"/>
+
+      <!-- Lower-right sea inlet -->
+      <path d="M 580,420 C 610,415 650,428 678,445 C 690,455 686,490 680,520 C 674,550 658,580 640,600 C 622,620 598,630 578,625 C 558,620 545,605 540,585 C 535,565 542,540 550,515 C 558,490 568,460 575,438 C 577,432 578,426 580,420Z"
+        fill="url(#seaG)" stroke="#6898b8" stroke-width=".8" opacity=".8"/>
+      <path d="M 590,450 C 615,446 648,455 668,468"
+        fill="none" stroke="rgba(220,245,255,.4)" stroke-width="1.2" stroke-linecap="round" class="sw" style="animation-delay:.4s"/>
+
+      <!-- ── ISLANDS (center sea and lower sea) ── -->
+      <!-- Main center island (rocky outcrop) -->
+      <ellipse cx="475" cy="118" rx="22" ry="14" fill="url(#islandG)" stroke="rgba(130,85,30,.5)" stroke-width=".9"/>
+      <ellipse cx="475" cy="114" rx="14" ry="8"  fill="rgba(200,165,80,.6)"/>
+      <!-- island 2 (smaller) -->
+      <ellipse cx="540" cy="148" rx="12" ry="8"  fill="url(#islandG)" stroke="rgba(130,85,30,.4)" stroke-width=".8"/>
+      <!-- lower sea island (large) -->
+      <ellipse cx="600" cy="520" rx="28" ry="20" fill="url(#islandG)" stroke="rgba(130,85,30,.5)" stroke-width=".9"/>
+      <ellipse cx="600" cy="516" rx="18" ry="12" fill="rgba(200,168,78,.55)"/>
+
+      <!-- ── MAINLAND COASTLINE edge (left/center/bottom land) ── -->
+      <path d="M 18,18 C 80,22 140,26 200,32 C 260,38 320,44 365,60 C 390,70 408,84 410,100 C 412,118 398,132 378,142 C 355,153 325,155 295,160 C 265,165 235,172 205,180 C 175,188 150,198 130,215 C 110,232 98,255 90,280 C 82,305 80,332 85,360 C 90,388 100,414 108,440 C 116,466 120,490 115,515 C 110,540 98,562 92,590 C 86,618 88,648 90,678 C 88,680 18,680 18,18Z"
+        fill="rgba(220,190,100,.18)" stroke="rgba(140,90,30,.25)" stroke-width=".8"/>
+
+      <!-- ── MOUNTAINS ── -->
+      <!-- top-left mountain cluster -->
+      <g filter="url(#fshadow)" transform="translate(22,52)">
+        <polygon points="0,78 36,8 72,78" fill="url(#mtnG)" stroke="rgba(90,55,20,.45)" stroke-width=".8"/>
+        <polygon points="5,78 36,10 67,78" fill="rgba(160,120,80,.35)" opacity=".5"/>
+        <polygon points="26,78 54,14 82,78" fill="url(#mtnG)" transform="translate(18,10)" stroke="rgba(90,55,20,.35)" stroke-width=".7"/>
+        <polygon points="30,18 36,8 42,18" fill="rgba(240,235,225,.7)" opacity=".8"/><!-- snow -->
+      </g>
+      <!-- top-right mountain cluster (peninsula) -->
+      <g filter="url(#fshadow)" transform="translate(548,225)">
+        <polygon points="0,80 36,8 72,80" fill="url(#mtnG)" stroke="rgba(90,55,20,.45)" stroke-width=".8"/>
+        <polygon points="4,80 36,10 68,80" fill="rgba(160,120,80,.35)" opacity=".45"/>
+        <polygon points="22,80 50,14 78,80" fill="url(#mtnG)" transform="translate(18,10)" stroke="rgba(90,55,20,.35)" stroke-width=".7"/>
+        <polygon points="30,18 36,8 42,18" fill="rgba(240,235,225,.7)" opacity=".8"/>
+      </g>
+      <!-- center mountains -->
+      <g filter="url(#fshadow)" transform="translate(240,190)">
+        <polygon points="0,70 30,8 60,70" fill="url(#mtnG)" stroke="rgba(90,55,20,.4)" stroke-width=".8"/>
+        <polygon points="4,70 30,10 56,70" fill="rgba(160,120,80,.3)" opacity=".45"/>
+      </g>
+      <g filter="url(#fshadow)" transform="translate(310,240)">
+        <polygon points="0,68 28,8 56,68" fill="url(#mtnG)" stroke="rgba(90,55,20,.38)" stroke-width=".7"/>
+        <polygon points="4,68 28,10 52,68" fill="rgba(160,120,80,.28)" opacity=".4"/>
+      </g>
+      <!-- lower-right land mountains -->
+      <g filter="url(#fshadow)" transform="translate(540,390)">
+        <polygon points="0,72 32,8 64,72" fill="url(#mtnG)" stroke="rgba(90,55,20,.4)" stroke-width=".8"/>
+        <polygon points="4,72 32,10 60,72" fill="rgba(160,120,80,.3)" opacity=".4"/>
+        <polygon points="28,18 32,8 36,18" fill="rgba(240,235,225,.7)" opacity=".75"/>
+      </g>
+      <g filter="url(#fshadow)" transform="translate(420,450)">
+        <polygon points="0,65 28,8 56,65" fill="url(#mtnG)" stroke="rgba(90,55,20,.38)" stroke-width=".7"/>
+        <polygon points="4,65 28,10 52,65" fill="rgba(160,120,80,.28)" opacity=".38"/>
+      </g>
+
+      <!-- ── TREES (lush, scattered) ── -->
+      <g stroke="rgba(60,90,35,.55)" stroke-width=".7" fill="rgba(70,105,40,.5)">
+        <!-- upper left grove -->
+        <g transform="translate(155,85)"><polygon points="0,-18 -8,0 8,0"/><polygon points="0,-10 -6,5 6,5"/><rect x="-1.5" y="5" width="3" height="5" fill="rgba(90,55,20,.55)" stroke="none"/></g>
+        <g transform="translate(175,78)"><polygon points="0,-20 -9,0 9,0"/><polygon points="0,-12 -7,5 7,5"/><rect x="-1.5" y="5" width="3" height="5" fill="rgba(90,55,20,.55)" stroke="none"/></g>
+        <g transform="translate(198,88)"><polygon points="0,-18 -8,0 8,0"/><polygon points="0,-11 -6,5 6,5"/><rect x="-1.5" y="5" width="3" height="4" fill="rgba(90,55,20,.55)" stroke="none"/></g>
+        <!-- castle left grove -->
+        <g transform="translate(105,210)"><polygon points="0,-18 -8,0 8,0"/><polygon points="0,-10 -5,5 5,5"/><rect x="-1" y="5" width="2.5" height="4" fill="rgba(90,55,20,.55)" stroke="none"/></g>
+        <g transform="translate(128,200)"><polygon points="0,-20 -9,0 9,0"/><polygon points="0,-12 -6,5 6,5"/><rect x="-1.5" y="5" width="3" height="5" fill="rgba(90,55,20,.55)" stroke="none"/></g>
+        <g transform="translate(110,238)"><polygon points="0,-17 -7,0 7,0"/><polygon points="0,-9 -5,4 5,4"/><rect x="-1" y="4" width="2.5" height="4" fill="rgba(90,55,20,.55)" stroke="none"/></g>
+        <!-- right land -->
+        <g transform="translate(445,315)"><polygon points="0,-18 -8,0 8,0"/><polygon points="0,-10 -5,4 5,4"/><rect x="-1" y="4" width="2.5" height="4" fill="rgba(90,55,20,.55)" stroke="none"/></g>
+        <g transform="translate(465,305)"><polygon points="0,-20 -9,0 9,0"/><polygon points="0,-12 -6,4 6,4"/><rect x="-1.5" y="4" width="3" height="5" fill="rgba(90,55,20,.55)" stroke="none"/></g>
+        <g transform="translate(428,338)"><polygon points="0,-17 -7,0 7,0"/><polygon points="0,-9 -5,4 5,4"/><rect x="-1" y="4" width="2.5" height="4" fill="rgba(90,55,20,.55)" stroke="none"/></g>
+        <!-- lower land -->
+        <g transform="translate(340,470)"><polygon points="0,-18 -8,0 8,0"/><polygon points="0,-10 -5,4 5,4"/><rect x="-1" y="4" width="2.5" height="4" fill="rgba(90,55,20,.55)" stroke="none"/></g>
+        <g transform="translate(365,460)"><polygon points="0,-20 -9,0 9,0"/><polygon points="0,-12 -6,4 6,4"/><rect x="-1.5" y="4" width="3" height="5" fill="rgba(90,55,20,.55)" stroke="none"/></g>
+        <g transform="translate(358,498)"><polygon points="0,-17 -7,0 7,0"/><polygon points="0,-9 -5,4 5,4"/><rect x="-1" y="4" width="2.5" height="4" fill="rgba(90,55,20,.55)" stroke="none"/></g>
+      </g>
+
+      <!-- ── DOTTED TRADE ROUTES ── -->
+      <path d="M 155,175 C 185,168 220,165 260,170 C 300,175 330,185 365,178 C 400,171 430,158 470,162 C 505,166 535,178 562,170"
+        fill="none" stroke="#a07828" stroke-width="1.6" stroke-dasharray="8,6" stroke-linecap="round" opacity=".55"/>
+      <path d="M 155,175 C 148,215 145,260 152,305 C 159,350 172,390 178,435 C 184,480 180,525 175,568"
+        fill="none" stroke="#a07828" stroke-width="1.4" stroke-dasharray="7,6" stroke-linecap="round" opacity=".45"/>
+      <!-- sea route (dotted) -->
+      <path d="M 440,125 C 460,132 475,145 490,148 C 508,152 525,148 540,152"
+        fill="none" stroke="#6898b8" stroke-width="1.2" stroke-dasharray="5,5" stroke-linecap="round" opacity=".55"/>
+
+      <!-- ── FLYING DRAGON (top center, as in map2) ── -->
+      <g transform="translate(295,45)" style="animation:dragfly 8s ease-in-out infinite" opacity=".55">
+        <!-- body -->
+        <path d="M 0,0 C 8,-4 20,-3 28,2 C 36,7 38,14 32,18 C 24,22 12,18 4,14 C -4,10 -6,4 0,0Z"
+          fill="rgba(180,100,40,.6)" stroke="rgba(140,70,20,.5)" stroke-width=".8"/>
+        <!-- head -->
+        <ellipse cx="-5" cy="0" rx="8" ry="6" fill="rgba(180,100,40,.65)" stroke="rgba(140,70,20,.5)" stroke-width=".7"/>
+        <!-- eye -->
+        <circle cx="-8" cy="-1" r="1.5" fill="rgba(220,160,20,.8)"/>
+        <!-- wings -->
+        <path d="M 8,-4 C 4,-18 -4,-22 -10,-16 C -6,-8 0,-4 8,-4Z" fill="rgba(160,80,30,.4)" stroke="rgba(120,60,20,.4)" stroke-width=".7"/>
+        <path d="M 18,-2 C 22,-16 28,-18 32,-10 C 28,-4 22,-2 18,-2Z" fill="rgba(160,80,30,.35)" stroke="rgba(120,60,20,.35)" stroke-width=".7"/>
+        <!-- tail -->
+        <path d="M 28,8 C 36,10 44,8 48,14 C 50,18 46,22 40,20" fill="none" stroke="rgba(160,80,30,.5)" stroke-width="1.2" stroke-linecap="round"/>
+      </g>
+
+      <!-- ── LANDMARK GLOWS ── -->
+      <ellipse cx="152" cy="178" rx="28" ry="20" fill="rgba(220,160,40,.12)" class="gp"/>
+      <ellipse cx="420" cy="165" rx="28" ry="20" fill="rgba(220,160,40,.12)" class="gp" style="animation-delay:.7s"/>
+      <ellipse cx="178" cy="545" rx="26" ry="18" fill="rgba(220,160,40,.1)" class="gp" style="animation-delay:.4s"/>
+      <ellipse cx="490" cy="572" rx="26" ry="18" fill="rgba(220,160,40,.1)" class="gp" style="animation-delay:1s"/>
+      <ellipse cx="312" cy="598" rx="24" ry="18" fill="rgba(220,160,40,.1)" class="gp" style="animation-delay:1.3s"/>
+
+      <!-- ── LANDMARKS ── -->
+      <!-- 1. Grand castle top-left (main city in map2) -->
+      <g class="lm" transform="translate(152,178)" filter="url(#fglow)"
+         onclick="showTip(event,'Vel Sadro — The Golden City','Seat of the Merchant Princes. Its spires are covered in gold leaf. The harbour fees alone fund three armies.')">
+        <rect x="-20" y="-8" width="40" height="20" rx="1" fill="#5a3010" stroke="rgba(180,120,30,.6)" stroke-width="1"/>
+        <rect x="-10" y="-24" width="20" height="18" rx="1" fill="#6a3c18" stroke="rgba(180,120,30,.55)" stroke-width=".9"/>
+        <rect x="-20" y="-22" width="10" height="16" rx="1" fill="#603818" stroke="rgba(180,120,30,.5)" stroke-width=".8"/>
+        <rect x="10"  y="-22" width="10" height="16" rx="1" fill="#603818" stroke="rgba(180,120,30,.5)" stroke-width=".8"/>
+        <!-- spire -->
+        <polygon points="0,-36 -3,-24 3,-24" fill="rgba(200,160,40,.8)"/>
+        <!-- gold accents -->
+        <rect x="-20" y="-26" width="4" height="5" rx=".5" fill="#7a4820"/>
+        <rect x="-14" y="-24" width="4" height="4" rx=".5" fill="#7a4820"/>
+        <rect x="-10" y="-28" width="4" height="5" rx=".5" fill="#7a4820"/>
+        <rect x="-4"  y="-26" width="4" height="5" rx=".5" fill="#7a4820"/>
+        <rect x="2"   y="-28" width="4" height="5" rx=".5" fill="#7a4820"/>
+        <rect x="8"   y="-26" width="4" height="4" rx=".5" fill="#7a4820"/>
+        <rect x="14"  y="-24" width="4" height="5" rx=".5" fill="#7a4820"/>
+        <circle cx="-15" cy="-15" r="2"  fill="rgba(220,170,40,.7)" class="gp"/>
+        <circle cx="15"  cy="-15" r="2"  fill="rgba(220,170,40,.65)" class="gp" style="animation-delay:.5s"/>
+        <circle cx="0"   cy="-18" r="1.8" fill="rgba(220,170,40,.7)" class="gp" style="animation-delay:.9s"/>
+        <text y="22" text-anchor="middle" font-family="IM Fell English,serif" font-size="9" fill="rgba(80,40,10,.75)" font-style="italic">Vel Sadro</text>
+      </g>
+
+      <!-- 2. Castle right (second kingdom) -->
+      <g class="lm" transform="translate(420,165)" filter="url(#fglow)"
+         onclick="showTip(event,'Stoneguard Keep','Built on the cliffs above the sea lanes. Every ship passing the strait pays toll or answers to the cannon.')">
+        <rect x="-14" y="-6" width="28" height="16" rx="1" fill="#5a3010" stroke="rgba(180,120,30,.55)" stroke-width=".9"/>
+        <rect x="-7" y="-18" width="14" height="14" rx="1" fill="#6a3c18" stroke="rgba(180,120,30,.5)" stroke-width=".8"/>
+        <rect x="-14" y="-16" width="8" height="12" rx="1" fill="#603818" stroke="rgba(180,120,30,.45)" stroke-width=".8"/>
+        <rect x="6"   y="-16" width="8" height="12" rx="1" fill="#603818" stroke="rgba(180,120,30,.45)" stroke-width=".8"/>
+        <rect x="-14" y="-20" width="3" height="5" rx=".5" fill="#7a4820"/>
+        <rect x="-9"  y="-18" width="3" height="4" rx=".5" fill="#7a4820"/>
+        <rect x="-7"  y="-22" width="3" height="5" rx=".5" fill="#7a4820"/>
+        <rect x="-2"  y="-20" width="3" height="5" rx=".5" fill="#7a4820"/>
+        <rect x="4"   y="-22" width="3" height="5" rx=".5" fill="#7a4820"/>
+        <rect x="8"   y="-18" width="3" height="4" rx=".5" fill="#7a4820"/>
+        <circle cx="0" cy="-12" r="1.8" fill="rgba(220,170,40,.65)" class="gp"/>
+        <text y="20" text-anchor="middle" font-family="IM Fell English,serif" font-size="9" fill="rgba(80,40,10,.75)" font-style="italic">Stoneguard Keep</text>
+      </g>
+
+      <!-- 3. Castle lower left -->
+      <g class="lm" transform="translate(178,545)" filter="url(#fglow)"
+         onclick="showTip(event,'Thornwall Castle','Controls the only road through the southern pass. The lord charges tolls in secrets, not gold.')">
+        <rect x="-12" y="-5" width="24" height="14" rx="1" fill="#5a3010" stroke="rgba(170,115,28,.55)" stroke-width=".9"/>
+        <rect x="-6" y="-16" width="12" height="13" rx="1" fill="#6a3c18" stroke="rgba(170,115,28,.5)" stroke-width=".8"/>
+        <rect x="-12" y="-14" width="7" height="11" rx="1" fill="#603818" stroke="rgba(170,115,28,.45)" stroke-width=".7"/>
+        <rect x="5"   y="-14" width="7" height="11" rx="1" fill="#603818" stroke="rgba(170,115,28,.45)" stroke-width=".7"/>
+        <rect x="-6" y="-18" width="3" height="4" rx=".5" fill="#7a4820"/>
+        <rect x="-2" y="-20" width="3" height="5" rx=".5" fill="#7a4820"/>
+        <rect x="2"  y="-18" width="3" height="4" rx=".5" fill="#7a4820"/>
+        <circle cx="0" cy="-10" r="1.5" fill="rgba(210,160,38,.65)" class="gp"/>
+        <text y="18" text-anchor="middle" font-family="IM Fell English,serif" font-size="9" fill="rgba(80,40,10,.75)" font-style="italic">Thornwall Castle</text>
+      </g>
+
+      <!-- 4. Island castle (lower right sea island) -->
+      <g class="lm" transform="translate(490,572)" filter="url(#fglow)"
+         onclick="showTip(event,'The Tidal Throne','Built on an island that floods at high tide. The court meets only at noon. They decide everything in two hours.')">
+        <rect x="-11" y="-4" width="22" height="12" rx="1" fill="#5a3010" stroke="rgba(170,115,28,.55)" stroke-width=".9"/>
+        <rect x="-5" y="-15" width="10" height="13" rx="1" fill="#6a3c18" stroke="rgba(170,115,28,.5)" stroke-width=".8"/>
+        <polygon points="0,-24 -3,-15 3,-15" fill="rgba(200,155,35,.7)"/>
+        <rect x="-11" y="-12" width="6" height="9" rx="1" fill="#603818" stroke="rgba(170,115,28,.45)" stroke-width=".7"/>
+        <rect x="5"   y="-12" width="6" height="9" rx="1" fill="#603818" stroke="rgba(170,115,28,.45)" stroke-width=".7"/>
+        <circle cx="0" cy="-9" r="1.5" fill="rgba(210,160,38,.65)" class="gp"/>
+        <!-- water base -->
+        <path d="M -14,8 C -6,5 6,5 14,8 C 10,12 -10,12 -14,8Z" fill="rgba(100,160,190,.45)"/>
+        <text y="20" text-anchor="middle" font-family="IM Fell English,serif" font-size="9" fill="rgba(80,40,10,.75)" font-style="italic">Tidal Throne</text>
+      </g>
+
+      <!-- 5. Center island tower -->
+      <g class="lm" transform="translate(312,598)"
+         onclick="showTip(event,'The Pilot\'s Beacon','A lighthouse so old no one knows who built it. Ships follow its light. Some follow it onto rocks.')">
+        <rect x="-4" y="-22" width="8" height="28" rx="1" fill="#5a3010" stroke="rgba(170,115,28,.55)" stroke-width=".9"/>
+        <rect x="-6" y="-24" width="12" height="5" rx="1" fill="#6a3c18" stroke="rgba(170,115,28,.5)" stroke-width=".8"/>
+        <ellipse cx="0" cy="-28" rx="5" ry="3" fill="rgba(220,180,50,.7)" class="gp"/>
+        <text y="16" text-anchor="middle" font-family="IM Fell English,serif" font-size="9" fill="rgba(80,40,10,.75)" font-style="italic">Pilot's Beacon</text>
+      </g>
+
+      <!-- BORDERS -->
+      <rect x="18" y="18" width="664" height="664" fill="none" stroke="rgba(90,50,10,.32)" stroke-width="1.2"/>
+      <rect x="24" y="24" width="652" height="652" fill="none" stroke="rgba(90,50,10,.18)" stroke-width=".6"/>
+
+      <!-- corner ornaments -->
+      <g stroke="rgba(110,65,18,.42)" stroke-width=".9" fill="none">
+        <path d="M 18,18 L 18,58 M 18,18 L 58,18"/><circle cx="32" cy="32" r="3.5" fill="rgba(160,110,30,.28)" stroke="none"/>
+        <path d="M 682,18 L 682,58 M 682,18 L 642,18"/><circle cx="668" cy="32" r="3.5" fill="rgba(160,110,30,.28)" stroke="none"/>
+        <path d="M 18,682 L 18,642 M 18,682 L 58,682"/><circle cx="32" cy="668" r="3.5" fill="rgba(160,110,30,.28)" stroke="none"/>
+        <path d="M 682,682 L 682,642 M 682,682 L 642,682"/><circle cx="668" cy="668" r="3.5" fill="rgba(160,110,30,.28)" stroke="none"/>
+      </g>
+
+      <!-- Compass (top right, matching map2) -->
+      <g transform="translate(640,82)" font-family="Cinzel,serif" font-size="9" fill="rgba(70,38,8,.55)">
+        <circle cx="0" cy="0" r="26" fill="rgba(210,180,100,.14)" stroke="rgba(110,65,18,.32)" stroke-width="1"/>
+        <polygon points="0,-26 -5,-8 0,-13 5,-8" fill="rgba(130,70,20,.65)"/>
+        <polygon points="0,26  -4,8 0,13 4,8"  fill="rgba(100,58,18,.45)"/>
+        <polygon points="-26,0 -8,-4 -13,0 -8,4" fill="rgba(100,58,18,.45)"/>
+        <polygon points="26,0 8,-4 13,0 8,4"  fill="rgba(100,58,18,.45)"/>
+        <circle cx="0" cy="0" r="3" fill="rgba(170,115,28,.5)" stroke="rgba(210,165,55,.38)" stroke-width=".8"/>
+        <text x="0"  y="-30" text-anchor="middle">N</text>
+        <text x="0"  y="38"  text-anchor="middle">S</text>
+        <text x="32" y="4"   text-anchor="middle">E</text>
+        <text x="-32" y="4"  text-anchor="middle">W</text>
+      </g>
+
+      <!-- TREASURE MARKER (hidden) -->
+      <g id="treasure-marker" transform="translate(350,350)">
+        <circle cx="0" cy="0" r="20" fill="rgba(200,150,30,.1)" class="gp"/>
+        <rect x="-10" y="-5" width="20" height="13" rx="2" fill="#4a2808" stroke="rgba(180,130,40,.7)" stroke-width="1.2"/>
+        <rect x="-10" y="-9" width="20" height="6"  rx="2" fill="#5a3010" stroke="rgba(180,130,40,.6)" stroke-width="1"/>
+        <rect x="-3" y="-3" width="6" height="5" rx="1" fill="rgba(200,150,40,.7)"/>
+        <circle cx="0" cy="0" r="1.5" fill="#f0d060"/>
+        <text y="20" text-anchor="middle" font-family="IM Fell English,serif" font-size="8" fill="rgba(80,40,10,.7)" font-style="italic">hidden relic</text>
+      </g>
+
+      <!-- PLAYER DOT -->
+      <g id="player-dot" transform="translate(350,350)">
+        <circle id="pp-o" cx="0" cy="0" r="18" fill="rgba(200,150,40,.12)"/>
+        <circle id="pp-i" cx="0" cy="0" r="11" fill="rgba(200,150,40,.22)"/>
+        <ellipse cx="0" cy="10" rx="6" ry="2" fill="rgba(0,0,0,.3)"/>
+        <circle cx="0" cy="0" r="6" fill="#2a1408" stroke="rgba(200,150,40,.8)" stroke-width="1.4"/>
+        <circle cx="0" cy="0" r="3" fill="#d4a030"/>
+        <polygon id="p-arrow" points="0,-10 -3,-5 3,-5" fill="rgba(200,150,40,.75)"/>
+      </g>
+    </svg>
+  </div>
+</div>
+
+<div class="tip" id="tip">
+  <strong id="tip-name"></strong>
+  <p id="tip-desc"></p>
+</div>
+
+<div id="radar-panel">
+  <div id="r-title">⚓ Sailor's Compass ⚓</div>
+  <div id="radar-wrap">
+    <svg id="rsv" viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="rbg" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#160e02"/>
+          <stop offset="100%" stop-color="#0c0801"/>
+        </radialGradient>
+        <filter id="rglw" x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <circle cx="105" cy="105" r="100" fill="url(#rbg)" stroke="rgba(160,100,20,.3)" stroke-width="1.5"/>
+      <circle cx="105" cy="105" r="78" fill="none" stroke="rgba(140,90,20,.12)" stroke-width="1" stroke-dasharray="4,5"/>
+      <circle cx="105" cy="105" r="54" fill="none" stroke="rgba(140,90,20,.12)" stroke-width="1" stroke-dasharray="3,5"/>
+      <circle cx="105" cy="105" r="30" fill="none" stroke="rgba(140,90,20,.18)" stroke-width="1"/>
+      <line x1="105" y1="5"   x2="105" y2="205" stroke="rgba(130,80,15,.1)" stroke-width=".8"/>
+      <line x1="5"   y1="105" x2="205" y2="105" stroke="rgba(130,80,15,.1)" stroke-width=".8"/>
+      <line x1="34"  y1="34"  x2="176" y2="176" stroke="rgba(100,140,160,.06)" stroke-width=".6"/>
+      <line x1="176" y1="34"  x2="34"  y2="176" stroke="rgba(100,140,160,.06)" stroke-width=".6"/>
+      <path id="r-sweep" d="M105,105 L105,5 A100,100 0 0,1 205,105 Z" fill="rgba(200,140,30,.07)" stroke="rgba(200,140,30,.2)" stroke-width=".7"/>
+      <text x="105" y="18"  text-anchor="middle" font-family="Cinzel,serif" font-size="10" fill="rgba(180,120,30,.5)">N</text>
+      <text x="105" y="202" text-anchor="middle" font-family="Cinzel,serif" font-size="10" fill="rgba(140,90,20,.35)">S</text>
+      <text x="200" y="109" text-anchor="middle" font-family="Cinzel,serif" font-size="10" fill="rgba(140,90,20,.35)">E</text>
+      <text x="10"  y="109" text-anchor="middle" font-family="Cinzel,serif" font-size="10" fill="rgba(140,90,20,.35)">W</text>
+      <circle id="rblip"  cx="105" cy="25" r="6"  fill="#c89028" opacity="0" filter="url(#rglw)"/>
+      <circle id="rblip2" cx="105" cy="25" r="12" fill="rgba(190,130,20,.2)" opacity="0"/>
+      <circle cx="105" cy="105" r="6"   fill="#1a0e02" stroke="rgba(190,130,20,.75)" stroke-width="1.5"/>
+      <circle cx="105" cy="105" r="2.5" fill="#c89028"/>
+    </svg>
+  </div>
+  <div id="r-label">PROXIMITY TO RELIC</div>
+  <div id="prox-track"><div id="prox-fill"></div></div>
+  <div id="prox-num">— %</div>
+  <div id="r-status">A treasure sleeps beneath the waves…</div>
+  <div id="r-hint">click the map to move</div>
+</div>
+
+<script>
+const dl=document.getElementById('dust');
+for(let i=0;i<20;i++){const p=document.createElement('div');p.className='dp';p.style.left=Math.random()*100+'%';p.style.width=(1+Math.random()*2)+'px';p.style.height=p.style.width;p.style.animationDuration=(14+Math.random()*20)+'s';p.style.animationDelay=(-Math.random()*22)+'s';p.style.opacity=.15+Math.random()*.35;dl.appendChild(p);}
+
+function showTip(e,name,desc){
+  const t=document.getElementById('tip');
+  document.getElementById('tip-name').textContent=name;
+  document.getElementById('tip-desc').textContent=desc;
+  t.classList.remove('show');void t.offsetWidth;
+  const fr=document.querySelector('.map-outer').getBoundingClientRect();
+  let x=e.clientX-fr.left+16,y=e.clientY-fr.top-12;
+  if(x+205>700)x-=220;if(y+110>700)y-=110;
+  t.style.left=x+'px';t.style.top=y+'px';
+  t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),4500);
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.lm'))document.getElementById('tip').classList.remove('show');});
+
+const TREASURE={x:80+Math.random()*540,y:80+Math.random()*540};
+const tMark=document.getElementById('treasure-marker');
+tMark.setAttribute('transform',`translate(${TREASURE.x},${TREASURE.y})`);
+tMark.style.display='none';
+let player={x:350,y:350},found=false;
+const pDot=document.getElementById('player-dot'),rblip=document.getElementById('rblip'),rblip2=document.getElementById('rblip2'),pFill=document.getElementById('prox-fill'),pNum=document.getElementById('prox-num'),rStat=document.getElementById('r-status');
+const DETECT=340;
+
+function updateRadar(){
+  const dx=TREASURE.x-player.x,dy=TREASURE.y-player.y,dist=Math.hypot(dx,dy);
+  const pct=Math.round(Math.max(0,Math.min(100,(1-dist/DETECT)*100)));
+  pFill.style.width=pct+'%';
+  if(pct<30){pFill.style.background='linear-gradient(90deg,#001428,#2888c0)';pNum.style.color='#50a8e0';pNum.style.textShadow='0 0 18px rgba(50,140,210,.6)';}
+  else if(pct<65){pFill.style.background='linear-gradient(90deg,#1a1400,#c8a020)';pNum.style.color='#d4a830';pNum.style.textShadow='0 0 18px rgba(200,160,30,.65)';}
+  else{pFill.style.background='linear-gradient(90deg,#1a0800,#c84020)';pNum.style.color='#d85030';pNum.style.textShadow='0 0 18px rgba(210,70,30,.7)';}
+  pNum.textContent=pct+'%';
+  if(!found){
+    if(dist<28){found=true;tMark.style.display='block';pNum.textContent='100%';pFill.style.width='100%';rStat.textContent='⚓ Treasure hauled from the deep! ⚓';rStat.style.color='#c89028';
+      const b=document.createElementNS('http://www.w3.org/2000/svg','circle');b.setAttribute('cx',TREASURE.x);b.setAttribute('cy',TREASURE.y);b.setAttribute('r','8');b.setAttribute('fill','none');b.setAttribute('stroke','rgba(190,135,25,.8)');b.setAttribute('stroke-width','2');svg.appendChild(b);let br=8,bop=.8;const bx=setInterval(()=>{br+=5;bop-=.07;b.setAttribute('r',br);b.setAttribute('stroke',`rgba(190,135,25,${Math.max(0,bop).toFixed(2)})`);if(bop<=0){clearInterval(bx);b.remove();}},16);}
+    else if(pct>65){rStat.textContent='🌊 The compass spins wildly — very near!';rStat.style.color='#c84030';}
+    else if(pct>35){rStat.textContent='~ Salt and gold in the air…';rStat.style.color='#c09020';}
+    else if(pct>0){rStat.textContent='A distant beacon stirs the needle…';rStat.style.color='rgba(80,140,190,.8)';}
+    else{rStat.textContent='A treasure sleeps beneath the waves…';rStat.style.color='rgba(140,90,25,.55)';}
+  }
+  if(!found){
+    const RC=105,RR=78,ang=Math.atan2(dy,dx),br=Math.max(0,Math.min(RR,(dist/DETECT)*RR));
+    const bx=RC+Math.cos(ang)*br,by=RC+Math.sin(ang)*br;
+    rblip.setAttribute('cx',bx.toFixed(1));rblip.setAttribute('cy',by.toFixed(1));rblip2.setAttribute('cx',bx.toFixed(1));rblip2.setAttribute('cy',by.toFixed(1));
+    rblip.setAttribute('opacity','1');rblip2.setAttribute('opacity','1');rblip.classList.add('rbon');rblip2.classList.add('rb2on');
+  }
+}
+const svg=document.getElementById('map-svg');
+svg.addEventListener('click',e=>{
+  if(e.target.closest('.lm'))return;
+  const r=svg.getBoundingClientRect();
+  player.x=Math.max(20,Math.min(680,(e.clientX-r.left)*(700/r.width)));
+  player.y=Math.max(20,Math.min(680,(e.clientY-r.top)*(700/r.height)));
+  pDot.setAttribute('transform',`translate(${player.x.toFixed(1)},${player.y.toFixed(1)})`);
+  const dx=TREASURE.x-player.x,dy=TREASURE.y-player.y;
+  document.getElementById('p-arrow').setAttribute('transform',`rotate(${(Math.atan2(dy,dx)*180/Math.PI+90).toFixed(1)})`);
+  updateRadar();
+  const rp=document.createElementNS('http://www.w3.org/2000/svg','circle');rp.setAttribute('cx',player.x.toFixed(1));rp.setAttribute('cy',player.y.toFixed(1));rp.setAttribute('r','6');rp.setAttribute('fill','none');rp.setAttribute('stroke','rgba(190,135,25,.6)');rp.setAttribute('stroke-width','1.2');svg.appendChild(rp);
+  let rr=6,rop=.6;const ri=setInterval(()=>{rr+=4;rop-=.1;rp.setAttribute('r',rr.toFixed(1));rp.setAttribute('stroke',`rgba(190,135,25,${Math.max(0,rop).toFixed(2)})`);if(rop<=0){clearInterval(ri);rp.remove();}},16);
+});
+updateRadar();
+</script>
+</body>
+</html>
